@@ -21,10 +21,5 @@ def on_upsert_item(item):
     Storage.upsert_item(item)
 
 
-@app.route('/')
-def index():
-    return 'bob'
-
-
 if __name__ == '__main__':
     socket_io.run(app)

@@ -1,5 +1,7 @@
 <template>
   <div class="column">
+    <LoadingMask :isLoading='isLoading' />
+
     <div class="buttons">
       <b-button class="costco" :class='{filterOn: this.filters.includes("costco")}'
           @click='toggleFilter("costco")'>
@@ -51,17 +53,21 @@
 
 <script>
 import EditItemModal from '@/components/EditListItem.vue';
+import LoadingMask from '@/components/LoadingMask.vue';
 
 export default {
   name: 'CreateGroceryList',
-  components: { EditItemModal },
+  components: { EditItemModal, LoadingMask },
   mounted() {
+    this.isLoading = true;
     this.$socket.emit('load_items', (items) => {
+      this.isLoading = false;
       this.items = items;
     });
   },
   data() {
     return {
+      isLoading: false,
       searchText: '',
       newItemName: '',
       isAddModalActive: false,
@@ -131,6 +137,7 @@ export default {
       } else {
         this.upsertItem(updatedItem, () => Object.assign(itemToUpdate, updatedItem));
       }
+      this.isLoading = true;
     },
     toggleFilter(filter) {
       const filterIndex = this.filters.indexOf(filter);
@@ -148,15 +155,19 @@ export default {
       }
 
       const concreteItem = this.items.find((possibleItem) => possibleItem.id === displayedItem.id);
-      const setToIsNeeded = !displayedItem.isNeeded;
+      const copyOfItem = { ...displayedItem };
 
-      displayedItem.isNeeded = setToIsNeeded;
-      this.upsertItem(displayedItem, () => {
-        concreteItem.isNeeded = setToIsNeeded;
+      copyOfItem.isNeeded = !copyOfItem.isNeeded;
+      this.upsertItem(copyOfItem, () => {
+        concreteItem.isNeeded = copyOfItem.isNeeded;
       });
+      this.isLoading = true;
     },
     upsertItem(item, callback) {
-      this.$socket.emit('upsert_item', item, callback);
+      this.$socket.emit('upsert_item', item, () => {
+        this.isLoading = false;
+        callback();
+      });
     },
   },
 };
