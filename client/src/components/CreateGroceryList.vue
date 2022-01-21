@@ -18,7 +18,7 @@
       <b-autocomplete rounded placeholder="Search for item to add"
             v-model='searchText' dropdown-position='top'
             :data='searchResults' field='text'
-            :clear-on-select='true' keep-first @select='itemSelected'>
+            :clear-on-select='true' keep-first @select='toggleItem'>
         <template #empty>
           "{{ searchText }}" not found
         </template>
@@ -28,7 +28,7 @@
       </b-autocomplete>
     </div>
 
-    <div class="item-row" v-for='item in displayedItems' :key='item.id'>
+    <div class="item-row" v-for='item in displayedItems' :key='item.id' @click='toggleItem(item)'>
       <div class="column is-2">
         {{ item.text }}
       </div>
@@ -55,6 +55,11 @@ import EditItemModal from '@/components/EditListItem.vue';
 export default {
   name: 'CreateGroceryList',
   components: { EditItemModal },
+  mounted() {
+    this.$socket.emit('load_items', (items) => {
+      this.items = items;
+    });
+  },
   data() {
     return {
       searchText: '',
@@ -73,31 +78,23 @@ export default {
         'kroger',
         'whole_foods',
       ],
-      items: [
-        {
-          id: 1, text: 'one', isNeeded: false, locations: [], notes: '',
-        },
-        {
-          id: 2, text: 'two', isNeeded: true, locations: [], notes: '',
-        },
-        {
-          id: 3, text: 'three', isNeeded: false, locations: [], notes: '',
-        },
-        {
-          id: 4, text: 'four', isNeeded: false, locations: [], notes: '',
-        },
-        {
-          id: 5, text: 'five', isNeeded: false, locations: [], notes: '',
-        },
-      ],
+      items: null,
     };
   },
   computed: {
     searchResults() {
+      if (this.items === null) {
+        return [];
+      }
+
       const lowerSearch = this.searchText.toLowerCase();
       return this.items.filter((item) => item.text.toLowerCase().includes(lowerSearch));
     },
     displayedItems() {
+      if (this.items === null) {
+        return [];
+      }
+
       return this.items.filter((item) => item.isNeeded)
         .filter((item) => item.locations.some((location) => this.filters.includes(location)))
         .sort((one, two) => {
@@ -114,9 +111,6 @@ export default {
     },
   },
   methods: {
-    itemSelected(item) {
-      item.isNeeded = true;
-    },
     editItem(item) {
       this.editingItem = { ...item };
       this.isAddModalActive = true;
@@ -133,9 +127,9 @@ export default {
       const itemToUpdate = this.items.find((item) => item.id === this.editingItem.id);
       if (itemToUpdate === undefined) {
         updatedItem.id = this.findNextItemId();
-        this.items.push(updatedItem);
+        this.upsertItem(updatedItem, () => this.items.push(updatedItem));
       } else {
-        Object.assign(itemToUpdate, updatedItem);
+        this.upsertItem(updatedItem, () => Object.assign(itemToUpdate, updatedItem));
       }
     },
     toggleFilter(filter) {
@@ -146,6 +140,23 @@ export default {
         this.filters.push(filter);
       }
       document.activeElement.blur();
+    },
+    toggleItem(displayedItem) {
+      if (displayedItem === null) {
+        // The autocomplete clears the selection occasionally
+        return;
+      }
+
+      const concreteItem = this.items.find((possibleItem) => possibleItem.id === displayedItem.id);
+      const setToIsNeeded = !displayedItem.isNeeded;
+
+      displayedItem.isNeeded = setToIsNeeded;
+      this.upsertItem(displayedItem, () => {
+        concreteItem.isNeeded = setToIsNeeded;
+      });
+    },
+    upsertItem(item, callback) {
+      this.$socket.emit('upsert_item', item, callback);
     },
   },
 };
@@ -164,6 +175,9 @@ export default {
 
   .tags
     margin-bottom: 0
+
+  &:hover
+    cursor: pointer
 
 .location.tag
   &.costco
