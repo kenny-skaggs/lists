@@ -68,6 +68,7 @@ export default {
     return {
       isLoadingItems: false,
       isLoadingLocations: false,
+      isUpdatingItem: false,
       searchText: '',
       newItemName: '',
       isAddModalActive: false,
@@ -86,7 +87,7 @@ export default {
   },
   computed: {
     isLoading() {
-      return this.isLoadingItems || this.isLoadingLocations;
+      return this.isLoadingItems || this.isLoadingLocations || this.isUpdatingItem;
     },
     searchResults() {
       if (this.items === null) {
@@ -137,7 +138,6 @@ export default {
       } else {
         this.upsertItem(updatedItem, () => Object.assign(itemToUpdate, updatedItem));
       }
-      this.isLoading = true;
     },
     toggleFilter(filter) {
       const filterIndex = this.filters.indexOf(filter);
@@ -160,15 +160,16 @@ export default {
       copyOfItem.isNeeded = !copyOfItem.isNeeded;
       const updateCommand = copyOfItem.isNeeded ? 'need_item' : 'do_not_need_item';
 
-      this.isLoading = true;
+      this.isUpdatingItem = true;
       this.$socket.emit(updateCommand, concreteItem.id, () => {
-        this.isLoading = false;
+        this.isUpdatingItem = false;
         concreteItem.isNeeded = copyOfItem.isNeeded;
       });
     },
     upsertItem(item, callback) {
+      this.isUpdatingItem = true;
       this.$socket.emit('upsert_item', item, () => {
-        this.isLoading = false;
+        this.isUpdatingItem = false;
         callback();
       });
     },

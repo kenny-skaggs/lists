@@ -9,16 +9,19 @@ import App from './App.vue';
 import router from './router';
 import store from './store';
 
-const client = ioClient('http://localhost:5000', {
-  cors: {
-    origin: '*',
-  },
-});
+const connectionOptions = {
+  connection: window.location.href,
+};
+if (process.env.NODE_ENV === 'development') {
+  connectionOptions.connection = ioClient('http://localhost:5000', {
+    cors: {
+      origin: '*',
+    },
+  });
+  connectionOptions.debug = true;
+}
+Vue.use(new VueSocketIO(connectionOptions));
 
-Vue.use(new VueSocketIO({
-  debug: true,
-  connection: client,
-}));
 Vue.use(Buefy);
 
 Vue.config.productionTip = false;
