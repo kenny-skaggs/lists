@@ -3,17 +3,10 @@
     <LoadingMask :isLoading='isLoading' />
 
     <div class="buttons">
-      <b-button class="costco" :class='{filterOn: this.filters.includes("costco")}'
-          @click='toggleFilter("costco")'>
-        Costco
-      </b-button>
-      <b-button class="kroger" :class='{filterOn: this.filters.includes("kroger")}'
-          @click='toggleFilter("kroger")'>
-        Kroger
-      </b-button>
-      <b-button class="whole_foods" :class='{filterOn: this.filters.includes("whole_foods")}'
-          @click='toggleFilter("whole_foods")'>
-        Whole Foods
+      <b-button :class='{filterOn: filters.includes(location_name), [location_name]: true}'
+                @click='toggleFilter(location_name)'
+                v-for='location_name in locations' :key='location_name'>
+        {{ location_name }}
       </b-button>
     </div>
     <div class="footer">
@@ -42,12 +35,12 @@
       </b-taglist>
       <span class="column"></span>
       <div class="column is-narrow buttons">
-        <b-button @click='editItem(item)'>Edit</b-button>
+        <b-button @click.stop='editItem(item)'>Edit</b-button>
       </div>
     </div>
 
-    <EditItemModal v-model='isAddModalActive' :currentItem='this.editingItem'
-                   @submit='saveItemUpdates'/>
+    <EditItemModal v-model='isAddModalActive' :currentItem='editingItem'
+                   @submit='saveItemUpdates' :locations='locations'/>
   </div>
 </template>
 
@@ -59,15 +52,22 @@ export default {
   name: 'CreateGroceryList',
   components: { EditItemModal, LoadingMask },
   mounted() {
-    this.isLoading = true;
+    this.isLoadingItems = true;
+    this.isLoadingLocations = true;
     this.$socket.emit('load_items', (items) => {
-      this.isLoading = false;
+      this.isLoadingItems = false;
       this.items = items;
+    });
+    this.$socket.emit('load_locations', (locations) => {
+      this.isLoadingLocations = false;
+      this.locations = locations;
+      this.filters = [...locations];
     });
   },
   data() {
     return {
-      isLoading: false,
+      isLoadingItems: false,
+      isLoadingLocations: false,
       searchText: '',
       newItemName: '',
       isAddModalActive: false,
@@ -79,15 +79,15 @@ export default {
         locations: [],
         notes: '',
       },
-      filters: [
-        'costco',
-        'kroger',
-        'whole_foods',
-      ],
+      filters: [],
+      locations: [],
       items: null,
     };
   },
   computed: {
+    isLoading() {
+      return this.isLoadingItems || this.isLoadingLocations;
+    },
     searchResults() {
       if (this.items === null) {
         return [];
@@ -158,10 +158,13 @@ export default {
       const copyOfItem = { ...displayedItem };
 
       copyOfItem.isNeeded = !copyOfItem.isNeeded;
-      this.upsertItem(copyOfItem, () => {
+      const updateCommand = copyOfItem.isNeeded ? 'need_item' : 'do_not_need_item';
+
+      this.isLoading = true;
+      this.$socket.emit(updateCommand, concreteItem.id, () => {
+        this.isLoading = false;
         concreteItem.isNeeded = copyOfItem.isNeeded;
       });
-      this.isLoading = true;
     },
     upsertItem(item, callback) {
       this.$socket.emit('upsert_item', item, () => {

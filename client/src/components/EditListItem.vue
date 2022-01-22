@@ -8,9 +8,10 @@
         </b-field>
         <b-field>
             <b-select multiple v-model='currentItem.locations'>
-                <option value="costco">Costco</option>
-                <option value="kroger">Kroger</option>
-                <option value="whole_foods">Whole Foods</option>
+                <option v-for='location_name in locations' :key='location_name'
+                        :value='location_name' >
+                  {{ location_name }}
+                </option>
             </b-select>
         </b-field>
         <div class="buttons">
@@ -26,7 +27,7 @@
 <script>
 export default {
   name: 'EditListItem',
-  props: ['value', 'currentItem'],
+  props: ['value', 'currentItem', 'locations'],
   computed: {
     isModalActive: {
       get() {
