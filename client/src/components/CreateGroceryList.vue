@@ -194,17 +194,7 @@ export default {
   &:hover
     cursor: pointer
 
-.location.tag
-  &.costco
-    background: $turquoise
-    color: $grey-darker
-  &.kroger
-    background: $purple
-  &.whole_foods
-    background: $green
-    color: $grey-darker
-
-.button.filterOn
+.button.filterOn, .location.tag
   &.costco
     background-color: $turquoise
     color: $grey-darker
@@ -212,5 +202,11 @@ export default {
     background-color: $purple
   &.whole_foods
     background-color: $green
+    color: $grey-darker
+  &.k_s
+    background-color: $yellow
+    color: $grey-darker
+  &.pet_store
+    background-color: $red
     color: $grey-darker
 </style>

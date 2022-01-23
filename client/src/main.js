@@ -10,7 +10,7 @@ import router from './router';
 import store from './store';
 
 const connectionOptions = {
-  connection: window.location.href,
+  connection: ioClient(window.location.href),
 };
 if (process.env.NODE_ENV === 'development') {
   connectionOptions.connection = ioClient('http://localhost:5000', {
