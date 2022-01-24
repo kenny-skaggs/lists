@@ -1,5 +1,5 @@
 <template>
-  <div class="column">
+  <div class="column footer-container">
     <LoadingMask :isLoading='isLoading' />
 
     <div class="buttons">
