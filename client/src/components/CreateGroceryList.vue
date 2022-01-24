@@ -23,21 +23,23 @@
       </b-autocomplete>
     </div>
 
-    <div class="item-row" v-for='item in displayedItems' :key='item.id' @click='toggleItem(item)'>
-      <div class="column is-2">
-        {{ item.text }}
+    <transition-group name="item-list">
+      <div class="item-row" v-for='item in displayedItems' :key='item.id' @click='toggleItem(item)'>
+        <div class="column is-2">
+          {{ item.text }}
+        </div>
+        <b-taglist>
+          <b-tag type="is-primary" :class='location' class="location"
+                 v-for='location in item.locations' :key='location' style="font-size: 0.6em">
+            {{ location }}
+          </b-tag>
+        </b-taglist>
+        <span class="column"></span>
+        <div class="column is-narrow buttons">
+          <b-button @click.stop='editItem(item)'>Edit</b-button>
+        </div>
       </div>
-      <b-taglist>
-        <b-tag type="is-primary" :class='location' class="location"
-               v-for='location in item.locations' :key='location'>
-          {{ location }}
-        </b-tag>
-      </b-taglist>
-      <span class="column"></span>
-      <div class="column is-narrow buttons">
-        <b-button @click.stop='editItem(item)'>Edit</b-button>
-      </div>
-    </div>
+    </transition-group>
 
     <EditItemModal v-model='isAddModalActive' :currentItem='editingItem'
                    @submit='saveItemUpdates' :locations='locations'/>
@@ -181,6 +183,7 @@ export default {
 @import "~bulmaswatch/darkly/_variables.scss"
 
 .item-row
+  transition: all 0.5s
   display: flex
   background: $grey-dark
   border-radius: 0.5em
@@ -209,4 +212,11 @@ export default {
   &.pet_store
     background-color: $red
     color: $grey-darker
+
+.item-list-enter-active
+  transition: none
+
+.item-list-enter, .item-list-leave-to
+  opacity: 0
+
 </style>
