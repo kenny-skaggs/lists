@@ -18,6 +18,7 @@ class Location(BaseModel):
     __tablename__ = 'location'
     id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String(200), nullable=False)
+    color = sa.Column(sa.String(10))
 
 
 class ItemLocation(BaseModel):

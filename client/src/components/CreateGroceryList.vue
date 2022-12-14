@@ -3,11 +3,17 @@
     <LoadingMask :isLoading='isLoading' />
 
     <div class="buttons">
-      <b-button :class='{filterOn: filters.includes(location_name), [location_name]: true}'
-                @click='toggleFilter(location_name)'
-                v-for='location_name in locations' :key='location_name'>
-        {{ location_name }}
+      <b-button :class='{filterOn: filters.includes(location.name), [location.name]: true}'
+                @click='toggleFilter(location.name)'
+                v-for='location in locations' :key='location.id'
+                :style='{
+                  "background-color": location.color,
+                  "color": getTextColor(location.color)
+                }'
+      >
+        {{ location.name }}
       </b-button>
+      <a class="under-link" @click='showLocationListModal = true'>Edit Locations</a>
     </div>
     <div class="footer">
       <b-autocomplete rounded placeholder="Search for item to add"
@@ -29,9 +35,11 @@
           {{ item.text }}
         </div>
         <b-taglist>
-          <b-tag type="is-primary" :class='location' class="location"
-                 v-for='location in item.locations' :key='location' style="font-size: 0.6em">
-            {{ location }}
+          <b-tag type="is-primary" class="location"
+                 v-for='locationName in item.locations' :key='locationName' style="font-size: 0.6em"
+                 :style='{ "background-color": locationColorMap[locationName] }'
+          >
+            {{ locationName }}
           </b-tag>
         </b-taglist>
         <span class="column"></span>
@@ -43,27 +51,39 @@
 
     <EditItemModal v-model='isAddModalActive' :currentItem='editingItem'
                    @submit='saveItemUpdates' :locations='locations'/>
+
+    <b-modal v-model='showLocationListModal'>
+      <EditLocations :location-list='locations' @save='saveLocations' @cancel='cancelLocations' />
+    </b-modal>
   </div>
 </template>
 
 <script>
+import Color from 'color';
+
 import EditItemModal from '@/components/EditListItem.vue';
 import LoadingMask from '@/components/LoadingMask.vue';
+import EditLocations from './EditLocations.vue';
 
 export default {
   name: 'CreateGroceryList',
-  components: { EditItemModal, LoadingMask },
+  components: { EditItemModal, LoadingMask, EditLocations },
   mounted() {
     this.isLoadingItems = true;
     this.isLoadingLocations = true;
-    this.$socket.emit('load_items', (items) => {
+    this.$socket.client.emit('load_items', (items) => {
       this.isLoadingItems = false;
       this.items = items;
     });
-    this.$socket.emit('load_locations', (locations) => {
+    this.$socket.client.emit('load_locations', (locationList) => {
       this.isLoadingLocations = false;
-      this.locations = locations;
-      this.filters = [...locations];
+      this.locations = locationList;
+      this.filters = locationList.map((location) => location.name);
+
+      this.locationColorMap = {};
+      locationList.forEach((location) => {
+        this.locationColorMap[location.name] = location.color;
+      });
     });
   },
   data() {
@@ -85,6 +105,8 @@ export default {
       filters: [],
       locations: [],
       items: null,
+      showLocationListModal: false,
+      locationColorMap: {},
     };
   },
   computed: {
@@ -126,6 +148,7 @@ export default {
     },
     clickedAddNewItem() {
       this.editingItem = { ...this.itemTemplate };
+      this.editingItem.text = this.searchText;
       this.isAddModalActive = true;
     },
     findNextItemId() {
@@ -163,17 +186,42 @@ export default {
       const updateCommand = copyOfItem.isNeeded ? 'need_item' : 'do_not_need_item';
 
       this.isUpdatingItem = true;
-      this.$socket.emit(updateCommand, concreteItem.id, () => {
+      this.$socket.client.emit(updateCommand, concreteItem.id, () => {
         this.isUpdatingItem = false;
         concreteItem.isNeeded = copyOfItem.isNeeded;
       });
     },
     upsertItem(item, callback) {
       this.isUpdatingItem = true;
-      this.$socket.emit('upsert_item', item, () => {
+      this.$socket.client.emit('upsert_item', item, () => {
         this.isUpdatingItem = false;
         callback();
       });
+    },
+    getTextColor(colorStr) {
+      const white = Color('white');
+      const black = Color('black');
+      const color = Color(colorStr);
+
+      if (white.contrast(color) > black.contrast(color)) {
+        return 'white';
+      }
+
+      return 'black';
+    },
+    saveLocations(locations) {
+
+      this.showLocationListModal = false;
+    },
+    cancelLocations() {
+      this.showLocationListModal = false;
+    },
+  },
+  watch: {
+    isAddModalActive() {
+      if (this.isAddModalActive === false) {
+        this.searchText = '';
+      }
     },
   },
 };
@@ -199,18 +247,12 @@ export default {
 
 .button.filterOn, .location.tag
   &.costco
-    background-color: $turquoise
     color: $grey-darker
-  &.kroger
-    background-color: $purple
   &.whole_foods
-    background-color: $green
     color: $grey-darker
   &.k_s
-    background-color: $yellow
     color: $grey-darker
   &.pet_store
-    background-color: $red
     color: $grey-darker
 
 .item-list-enter-active
@@ -218,5 +260,8 @@ export default {
 
 .item-list-enter, .item-list-leave-to
   opacity: 0
+
+.under-link
+  text-decoration: underline
 
 </style>

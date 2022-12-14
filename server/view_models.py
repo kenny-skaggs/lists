@@ -26,3 +26,9 @@ class Item:
             is_needed=item_dict['isNeeded'],
             locations=item_dict['locations']
         )
+
+@dataclass
+class Location:
+    id: int
+    name: str
+    color: str

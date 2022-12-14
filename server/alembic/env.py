@@ -1,5 +1,7 @@
 from logging.config import fileConfig
 
+from dotenv import load_dotenv
+
 from alembic import context
 
 from tool_kit.external import Database
@@ -37,7 +39,7 @@ def run_migrations_offline():
     script output.
 
     """
-    with Database(use_ssl_tunnel=True).engine.connect() as connection:
+    with Database().engine.connect() as connection:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
@@ -56,7 +58,7 @@ def run_migrations_online():
     and associate a connection with the context.
 
     """
-    connectable = Database(use_ssl_tunnel=True).engine
+    connectable = Database().engine
 
     with connectable.connect() as connection:
         context.configure(

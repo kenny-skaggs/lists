@@ -2,19 +2,24 @@ from datetime import datetime
 from typing import Dict, List
 
 from sqlalchemy.orm import contains_eager, Session
-from sqlalchemy.sql.expression import bindparam
 
 import models
 from tool_kit.external import Database, Environment
 import view_models
 
-_db_manager = Database(use_ssl_tunnel=Environment.is_dev())
-
 
 class Storage:
+    _db_manager = None
+
+    @classmethod
+    def _get_db_manager(cls):
+        if cls._db_manager is None:
+            cls._db_manager = Database(use_ssl_tunnel=Environment.is_dev())
+        return cls._db_manager
+
     @classmethod
     def load_items(cls):
-        with _db_manager.get_new_session() as session:
+        with cls._get_db_manager().get_new_session() as session:
             db_items = (
                 session.query(models.Item)
                 .join(models.Item.location_refs)
@@ -43,18 +48,25 @@ class Storage:
 
     @classmethod
     def load_locations(cls) -> List[str]:
-        with _db_manager.get_new_session() as session:
-            locations = session.query(models.Location.name).all()
-        return [location.name for location in locations]
+        with cls._get_db_manager().get_new_session() as session:
+            locations = session.query(models.Location).all()
+        return [
+            {
+                'id': location.id,
+                'name': location.name,
+                'color': location.color
+            }
+            for location in locations
+        ]
 
     @classmethod
     def mark_item_needed(cls, item_id):
-        with _db_manager.get_new_session() as session:
+        with cls._get_db_manager().get_new_session() as session:
             session.add(models.ItemNeeded(item_id=item_id))
 
     @classmethod
     def mark_item_not_needed(cls, item_id):
-        with _db_manager.get_new_session() as session:
+        with cls._get_db_manager().get_new_session() as session:
             session.query(models.ItemNeeded).filter(
                 models.ItemNeeded.item_id == item_id
             ).update({
@@ -63,7 +75,10 @@ class Storage:
 
     @classmethod
     def upsert_item(cls, view_item: view_models.Item):
-        with _db_manager.get_new_session() as session:
+        if not view_item.locations:
+            return False, 'need to have at least 1 location'
+
+        with cls._get_db_manager().get_new_session() as session:
             item = session.query(models.Item).get(view_item.id)
             if item is None:
                 item = models.Item()
@@ -77,6 +92,8 @@ class Storage:
             for location_name in view_item.locations:
                 location_obj = location_name_map[location_name]
                 item.location_refs.append(models.ItemLocation(location=location_obj))
+
+        return True, None
 
     @classmethod
     def _build_locations_map(cls, session: Session) -> Dict[str, models.Location]:
