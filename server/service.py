@@ -14,7 +14,7 @@ class Storage:
     @classmethod
     def _get_db_manager(cls):
         if cls._db_manager is None:
-            cls._db_manager = Database(use_ssl_tunnel=Environment.is_dev())
+            cls._db_manager = Database()
         return cls._db_manager
 
     @classmethod
@@ -49,7 +49,7 @@ class Storage:
     @classmethod
     def load_locations(cls) -> List[str]:
         with cls._get_db_manager().get_new_session() as session:
-            locations = session.query(models.Location).all()
+            locations = session.query(models.Location).order_by(models.Location.id).all()
         return [
             {
                 'id': location.id,
@@ -94,6 +94,30 @@ class Storage:
                 item.location_refs.append(models.ItemLocation(location=location_obj))
 
         return True, None
+
+    @classmethod
+    def update_locations(cls, location_list: List[view_models.Location]):
+        with cls._get_db_manager().get_new_session() as session:
+            db_location_list = session.query(models.Location).all()
+            for db_location in db_location_list:
+                updated_location = cls._find_location(location_list=location_list, location_id=db_location.id)
+                if updated_location is None:
+                    session.delete(db_location)
+                else:
+                    cls._update_location(db_location=db_location, client_location=updated_location)
+
+    @classmethod
+    def _find_location(cls, location_list: List[view_models.Location], location_id):
+        for location in location_list:
+            if location.id == location_id:
+                return location
+
+        return None
+
+    @classmethod
+    def _update_location(cls, db_location: models.Location, client_location: view_models.Location):
+        db_location.name = client_location.name
+        db_location.color = client_location.color
 
     @classmethod
     def _build_locations_map(cls, session: Session) -> Dict[str, models.Location]:

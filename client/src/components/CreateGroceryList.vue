@@ -91,6 +91,7 @@ export default {
       isLoadingItems: false,
       isLoadingLocations: false,
       isUpdatingItem: false,
+      isUpdatingLocations: false,
       searchText: '',
       newItemName: '',
       isAddModalActive: false,
@@ -111,7 +112,12 @@ export default {
   },
   computed: {
     isLoading() {
-      return this.isLoadingItems || this.isLoadingLocations || this.isUpdatingItem;
+      return (
+        this.isLoadingItems
+        || this.isLoadingLocations
+        || this.isUpdatingItem
+        || this.isUpdatingLocations
+      );
     },
     searchResults() {
       if (this.items === null) {
@@ -210,8 +216,11 @@ export default {
       return 'black';
     },
     saveLocations(locations) {
-
       this.showLocationListModal = false;
+      this.isUpdatingLocations = true;
+      this.$socket.client.emit('save_locations', locations, () => {
+        this.isUpdatingLocations = false;
+      });
     },
     cancelLocations() {
       this.showLocationListModal = false;

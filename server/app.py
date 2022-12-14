@@ -28,7 +28,15 @@ def on_load_locations():
 
 @socket_io.on('save_locations')
 def on_save_locations(location_list_json):
-    location_list = [view_models.Loc]
+    location_list = [
+        view_models.Location(
+            id=location_json['id'],
+            name=location_json['name'],
+            color=location_json['color']
+        )
+        for location_json in location_list_json
+    ]
+    Storage.update_locations(location_list)
 
 
 @socket_io.on('upsert_item')

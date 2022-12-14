@@ -27,6 +27,7 @@ class Item:
             locations=item_dict['locations']
         )
 
+
 @dataclass
 class Location:
     id: int
