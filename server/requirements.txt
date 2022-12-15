@@ -9,7 +9,7 @@ cryptography==36.0.1
 Flask==2.0.2
 flask-socketio
 python-dotenv==0.20.0
-greenlet==1.1.2
+greenlet
 importlib-metadata==4.9.0
 importlib-resources==5.4.0
 itsdangerous==2.0.1
