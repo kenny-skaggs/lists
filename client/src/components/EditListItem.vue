@@ -13,9 +13,9 @@
           <b-field>
             <ValidationProvider name="location" rules="oneOrMore" v-slot='{ errors }'>
               <b-select multiple v-model='currentItem.locations'>
-                  <option v-for='location_name in locations' :key='location_name'
-                          :value='location_name'>
-                    {{ location_name }}
+                  <option v-for='location in locations' :key='location.id'
+                          :value='location.name' >
+                    {{ location.name }}
                   </option>
               </b-select>
               <span class="error-message">{{ errors[0] }}</span>
@@ -53,7 +53,7 @@ export default {
       this.$refs.newItemName.focus();
     },
     submitItem() {
-      // this.$emit('submit', this.currentItem);
+      this.$emit('submit', this.currentItem);
       this.closeModal();
     },
     closeModal() {
