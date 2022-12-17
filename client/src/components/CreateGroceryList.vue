@@ -30,7 +30,12 @@
     </div>
 
     <transition-group name="item-list">
-      <div class="item-row" v-for='item in displayedItems' :key='item.id' @click='toggleItem(item)'>
+      <div
+        class="item-row"
+        v-for='item in displayedItems'
+        :key='item.id'
+        @click='toggleItem(item, false)'
+      >
         <div class="column is-2">
           {{ item.text }}
         </div>
@@ -179,22 +184,43 @@ export default {
       }
       document.activeElement.blur();
     },
-    toggleItem(displayedItem) {
-      if (displayedItem === null) {
+    toggleItem(item, shouldAdd = true) {
+      if (item === null) {
         // The autocomplete clears the selection occasionally
         return;
       }
 
-      const concreteItem = this.items.find((possibleItem) => possibleItem.id === displayedItem.id);
-      const copyOfItem = { ...displayedItem };
+      const concreteItem = this.items.find((possibleItem) => possibleItem.id === item.id);
+      const copyOfItem = { ...item };
 
-      copyOfItem.isNeeded = !copyOfItem.isNeeded;
-      const updateCommand = copyOfItem.isNeeded ? 'need_item' : 'do_not_need_item';
+      if (shouldAdd && concreteItem.isNeeded) {
+        this.$buefy.toast.open({
+          message: `Already have ${concreteItem.text} listed`,
+          position: 'is-bottom',
+        });
+      } else {
+        copyOfItem.isNeeded = shouldAdd;
+        const updateCommand = shouldAdd ? 'need_item' : 'do_not_need_item';
 
-      this.isUpdatingItem = true;
-      this.$socket.client.emit(updateCommand, concreteItem.id, () => {
-        this.isUpdatingItem = false;
-        concreteItem.isNeeded = copyOfItem.isNeeded;
+        this.isUpdatingItem = true;
+        this.$socket.client.emit(updateCommand, concreteItem.id, () => {
+          this.isUpdatingItem = false;
+          concreteItem.isNeeded = copyOfItem.isNeeded;
+          this.toastItemUpdate(copyOfItem.text, shouldAdd);
+        });
+      }
+    },
+    toastItemUpdate(itemName, isAdded) {
+      let toastMessage = '';
+      if (isAdded) {
+        toastMessage = `Added ${itemName}`;
+      } else {
+        toastMessage = `Removed ${itemName}`;
+      }
+      this.$buefy.toast.open({
+        message: toastMessage,
+        position: 'is-bottom',
+        type: 'is-success',
       });
     },
     upsertItem(item, callback) {
