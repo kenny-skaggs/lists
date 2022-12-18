@@ -1,7 +1,7 @@
 
 from dotenv import load_dotenv
 from flask import Flask
-from flask_socketio import send, SocketIO
+from flask_socketio import emit, send, SocketIO
 
 from service import Storage
 from tool_kit.external import Environment
@@ -52,11 +52,13 @@ def on_upsert_item(item_json):
 @socket_io.on('need_item')
 def on_need_item(item_id):
     Storage.mark_item_needed(item_id=item_id)
+    socket_io.emit('addItem', item_id, include_self=False)
 
 
 @socket_io.on('do_not_need_item')
 def on_dont_need_item(item_id):
     Storage.mark_item_not_needed(item_id=item_id)
+    socket_io.emit('removeItem', item_id, include_self=False)
 
 
 if __name__ == '__main__':

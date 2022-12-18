@@ -191,7 +191,6 @@ export default {
       }
 
       const concreteItem = this.items.find((possibleItem) => possibleItem.id === item.id);
-      const copyOfItem = { ...item };
 
       if (shouldAdd && concreteItem.isNeeded) {
         this.$buefy.toast.open({
@@ -199,16 +198,19 @@ export default {
           position: 'is-bottom',
         });
       } else {
-        copyOfItem.isNeeded = shouldAdd;
         const updateCommand = shouldAdd ? 'need_item' : 'do_not_need_item';
 
         this.isUpdatingItem = true;
         this.$socket.client.emit(updateCommand, concreteItem.id, () => {
           this.isUpdatingItem = false;
-          concreteItem.isNeeded = copyOfItem.isNeeded;
-          this.toastItemUpdate(copyOfItem.text, shouldAdd);
+          this.listToggleItem(concreteItem.id, shouldAdd);
         });
       }
+    },
+    listToggleItem(itemId, shouldAdd) {
+      const item = this.items.find((possibleItem) => possibleItem.id === itemId);
+      item.isNeeded = shouldAdd;
+      this.toastItemUpdate(item.text, shouldAdd);
     },
     toastItemUpdate(itemName, isAdded) {
       let toastMessage = '';
@@ -250,6 +252,14 @@ export default {
     },
     cancelLocations() {
       this.showLocationListModal = false;
+    },
+  },
+  sockets: {
+    addItem(itemId) {
+      this.listToggleItem(itemId, true);
+    },
+    removeItem(itemId) {
+      this.listToggleItem(itemId, false);
     },
   },
   watch: {
