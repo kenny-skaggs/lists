@@ -3,23 +3,18 @@
     <LoadingMask :isLoading='isLoading' />
 
     <div class="buttons">
-      <b-button :class='{filterOn: filters.includes(location.name), [location.name]: true}'
-                @click='toggleFilter(location.name)'
-                v-for='location in locations' :key='location.id'
-                :style='{
-                  "background-color": location.color,
-                  "color": getTextColor(location.color)
-                }'
-      >
+      <b-button :class='{ filterOn: filters.includes(location.name), [location.name]: true }'
+        @click='toggleFilter(location.name)' v-for='location in locations' :key='location.id' :style='{
+          "background-color": location.color,
+          "color": getTextColor(location.color)
+        }'>
         {{ location.name }}
       </b-button>
       <a class="under-link" @click='showLocationListModal = true'>Edit Locations</a>
     </div>
     <div class="footer">
-      <b-autocomplete rounded placeholder="Search for item to add"
-            v-model='searchText' dropdown-position='top'
-            :data='searchResults' field='text'
-            :clear-on-select='true' keep-first @select='toggleItem'>
+      <b-autocomplete rounded placeholder="Search for item to add" v-model='searchText' dropdown-position='top'
+        :data='searchResults' field='text' :clear-on-select='true' keep-first @select='toggleItem'>
         <template #empty>
           "{{ searchText }}" not found
         </template>
@@ -30,20 +25,13 @@
     </div>
 
     <transition-group name="item-list">
-      <div
-        class="item-row"
-        v-for='item in displayedItems'
-        :key='item.id'
-        @click='toggleItem(item, false)'
-      >
+      <div class="item-row" v-for='item in displayedItems' :key='item.id' @click='toggleItem(item, false)'>
         <div class="column is-2">
           {{ item.text }}
         </div>
         <b-taglist>
-          <b-tag type="is-primary" class="location"
-                 v-for='locationName in item.locations' :key='locationName' style="font-size: 0.6em"
-                 :style='{ "background-color": locationColorMap[locationName] }'
-          >
+          <b-tag type="is-primary" class="location" v-for='locationName in item.locations' :key='locationName'
+            style="font-size: 0.6em" :style='{ "background-color": locationColorMap[locationName] }'>
             {{ locationName }}
           </b-tag>
         </b-taglist>
@@ -54,8 +42,8 @@
       </div>
     </transition-group>
 
-    <EditItemModal v-model='isAddModalActive' :currentItem='editingItem'
-                   @submit='saveItemUpdates' :locations='locations'/>
+    <EditItemModal v-model='isAddModalActive' :currentItem='editingItem' @submit='saveItemUpdates'
+      :locations='locations' />
 
     <b-modal v-model='showLocationListModal'>
       <EditLocations :location-list='locations' @save='saveLocations' @cancel='cancelLocations' />
