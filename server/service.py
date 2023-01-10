@@ -18,16 +18,19 @@ class Storage:
         return cls._db_manager
 
     @classmethod
-    def load_items(cls):
+    def load_item(cls, item_id):
         with cls._get_db_manager().get_new_session() as session:
-            db_items = (
-                session.query(models.Item)
-                .join(models.Item.location_refs)
-                .join(models.ItemLocation.location)
-                .options(
-                    contains_eager(models.Item.location_refs, models.ItemLocation.location)
-                )
-            ).all()
+            db_item = cls._build_item_query(session).filter(
+                models.Item.id == item_id
+            ).one()
+
+        return cls._build_item_view_model(db_item)
+
+
+    @classmethod
+    def load_item_list(cls):
+        with cls._get_db_manager().get_new_session() as session:
+            db_items = cls._build_item_query(session).all()
 
             needed_items = (
                 session.query(models.ItemNeeded.item_id)
@@ -36,14 +39,11 @@ class Storage:
             needed_item_ids = {needed_item.item_id for needed_item in needed_items}
 
         view_items = []
-        for item in db_items:
-            location_names = [location_ref.location.name for location_ref in item.location_refs]
-            view_items.append(view_models.Item(
-                id=item.id,
-                text=item.name,
-                is_needed=item.id in needed_item_ids,
-                locations=location_names
-            ))
+        for db_item in db_items:
+            view_model = cls._build_item_view_model(db_item)
+            view_model.is_needed = view_model.id in needed_item_ids
+            view_items.append(view_model)
+            
         return view_items
 
     @classmethod
@@ -123,3 +123,24 @@ class Storage:
     def _build_locations_map(cls, session: Session) -> Dict[str, models.Location]:
         locations = session.query(models.Location).all()
         return {location.name: location for location in locations}
+
+    @classmethod
+    def _build_item_query(cls, session):
+        return (
+            session.query(models.Item)
+            .join(models.Item.location_refs)
+            .join(models.ItemLocation.location)
+            .options(
+                contains_eager(models.Item.location_refs, models.ItemLocation.location)
+            )
+        )
+
+    @classmethod
+    def _build_item_view_model(cls, db_item: models.Item):
+        location_names = [location_ref.location.name for location_ref in db_item.location_refs]
+        return view_models.Item(
+            id=db_item.id,
+            text=db_item.name,
+            is_needed=False,
+            locations=location_names
+        )

@@ -16,9 +16,15 @@ app.config['DEBUG'] = True
 socket_io = SocketIO(app, cors_allowed_origins='*')
 
 
-@socket_io.on('load_items')
-def on_load_items():
+@socket_io.on('load_item_list')
+def on_load_item_list():
     return [item.to_dict() for item in Storage.load_items()]
+
+
+@socket_io.on('load_item')
+def on_load_item(item_id):
+    item = Storage.load_item(item_id)
+    return item.to_dict()
 
 
 @socket_io.on('load_locations')
