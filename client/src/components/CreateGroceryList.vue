@@ -64,7 +64,7 @@ export default {
   mounted() {
     this.isLoadingItems = true;
     this.isLoadingLocations = true;
-    this.$socket.client.emit('load_items', (items) => {
+    this.$socket.client.emit('load_item_list', (items) => {
       this.isLoadingItems = false;
       this.items = items;
     });
@@ -241,10 +241,20 @@ export default {
     cancelLocations() {
       this.showLocationListModal = false;
     },
+    hasItem(itemId) {
+      const ids = this.items.map((item) => item.id);
+      return ids.includes(itemId);
+    }
   },
   sockets: {
     addItem(itemId) {
-      this.listToggleItem(itemId, true);
+      if (this.hasItem(itemId)) {
+        this.listToggleItem(itemId, true);
+      } else {
+        this.$socket.client.emit('load_item', (item) => {
+          this.items.push(item);
+        })
+      }
     },
     removeItem(itemId) {
       this.listToggleItem(itemId, false);
