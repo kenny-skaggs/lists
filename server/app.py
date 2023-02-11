@@ -1,10 +1,12 @@
 
 from dotenv import load_dotenv
 from flask import Flask
-from flask_socketio import emit, send, SocketIO
+from flask_socketio import send, SocketIO
 
+import serializer
 from service import Storage
 from tool_kit.external import Environment
+
 import view_models
 
 
@@ -18,7 +20,7 @@ socket_io = SocketIO(app, cors_allowed_origins='*')
 
 @socket_io.on('load_items')
 def on_load_items():
-    return [item.to_dict() for item in Storage.load_items()]
+    return [serializer.encode(item) for item in Storage.load_items()]
 
 
 @socket_io.on('load_locations')
@@ -29,11 +31,7 @@ def on_load_locations():
 @socket_io.on('save_locations')
 def on_save_locations(location_list_json):
     location_list = [
-        view_models.Location(
-            id=location_json['id'],
-            name=location_json['name'],
-            color=location_json['color']
-        )
+        serializer.decode(location_json, view_models.Location)
         for location_json in location_list_json
     ]
     Storage.update_locations(location_list)
@@ -41,7 +39,7 @@ def on_save_locations(location_list_json):
 
 @socket_io.on('upsert_item')
 def on_upsert_item(item_json):
-    item = view_models.Item.from_dict(item_json)
+    item = serializer.decode(item_json, view_models.Item)
     success_bool, error_msg = Storage.upsert_item(item)
     send({
         'saved': success_bool,

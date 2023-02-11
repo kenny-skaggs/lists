@@ -20,7 +20,7 @@ class Storage:
     @classmethod
     def load_items(cls):
         with cls._get_db_manager().get_new_session() as session:
-            db_items = (
+            db_item_list = (
                 session.query(models.Item)
                 .join(models.Item.location_refs)
                 .join(models.ItemLocation.location)
@@ -36,7 +36,7 @@ class Storage:
             needed_item_ids = {needed_item.item_id for needed_item in needed_items}
 
         view_items = []
-        for item in db_items:
+        for item in db_item_list:
             location_names = [location_ref.location.name for location_ref in item.location_refs]
             view_items.append(view_models.Item(
                 id=item.id,
@@ -47,16 +47,16 @@ class Storage:
         return view_items
 
     @classmethod
-    def load_locations(cls) -> List[str]:
+    def load_locations(cls) -> List[view_models.Location]:
         with cls._get_db_manager().get_new_session() as session:
-            locations = session.query(models.Location).order_by(models.Location.id).all()
+            db_location_list = session.query(models.Location).order_by(models.Location.id).all()
         return [
-            {
-                'id': location.id,
-                'name': location.name,
-                'color': location.color
-            }
-            for location in locations
+            view_models.Location(
+                id=db_location.id,
+                name=db_location.name,
+                color=db_location.color
+            )
+            for db_location in db_location_list
         ]
 
     @classmethod
