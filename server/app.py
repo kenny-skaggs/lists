@@ -25,7 +25,7 @@ def on_load_items():
 
 @socket_io.on('load_locations')
 def on_load_locations():
-    return Storage.load_locations()
+    return [serializer.encode(location) for location in Storage.load_locations()]
 
 
 @socket_io.on('save_locations')
