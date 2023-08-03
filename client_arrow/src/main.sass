@@ -1,0 +1,46 @@
+@import "~@picocss/pico/scss/pico.scss"
+
+
+.item-row
+    display: flex
+    justify-content: space-between
+
+    background-color: var(--card-background-color)
+    border-radius: 0.5em
+    align-items: center
+    padding: 0.5em 1em
+    margin-bottom: 1em
+    cursor: pointer
+
+
+
+.search-controls
+    position: fixed
+    left: 0
+    right: 0
+    bottom: 0
+    background-color: var(--background-color)  // todo: maybe frosted background?
+
+.search-footer
+    padding: 0.5em 1em 0 1em
+
+.search-spacer
+    height: 3em
+
+.results-box
+    padding: 1.5em 1.75em
+
+.search-result-item
+    padding: 0.5em 1em
+    border-radius: 0.5em
+
+    &:hover
+        cursor: pointer
+        background-color: var(--dropdown-hover-background-color)
+        
+.search-mask
+    background-color: rgba(0, 0, 0, 0.5)
+    height: 20px
+
+.float-right
+    float: right
