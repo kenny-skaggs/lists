@@ -1,6 +1,5 @@
 import { html } from "@arrow-js/core";
-
-import tracking from "../notsure/item_tracking";
+import storeInstance from "../services/store";
 
 
 export default class {
@@ -9,7 +8,7 @@ export default class {
         this._clickCallback = clickCallback;
     }
     onClick = () => {
-        tracking.addItem(this.search_result);
+        storeInstance.addToList(this.search_result);
         this._clickCallback();
     }
     render = () => {

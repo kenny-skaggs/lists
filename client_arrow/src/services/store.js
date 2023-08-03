@@ -13,7 +13,6 @@ class Store {
     }
     get_item_list = () => this._data.item_list
     getItem = (item_id) => {
-        console.log(this._data.item_list, item_id);
         return this._data.item_list.find((item) => item.id === item_id)
     }
     set_item_list = (item_list) => {
@@ -27,10 +26,13 @@ class Store {
         nextId += 1;
         this.addItem(newItem);
     }
-    addItem = (item) => {
-        server.add_item(item);
+    addToList = (item) => {
         this._data.item_list.push(item);
         this.set_item_list(this._data.item_list);  // to sort it after the add
+    }
+    addItem = (item) => {
+        server.add_item(item);
+        this.addToList(item);
     }
     updateItem = (item_id, item_data) => {
         const item = this.getItem(item_id);
