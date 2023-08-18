@@ -1,6 +1,10 @@
 @import "~@picocss/pico/scss/pico.scss"
 
 
+.page-title
+    font-size: 2em
+    font-weight: bolder
+
 .item-row
     display: flex
     justify-content: space-between
@@ -12,7 +16,8 @@
     margin-bottom: 1em
     cursor: pointer
 
-
+    .name
+        flex-grow: 1
 
 .search-controls
     position: fixed
@@ -28,19 +33,65 @@
     height: 3em
 
 .results-box
+    display: flex
+    align-items: center
     padding: 1.5em 1.75em
 
-.search-result-item
-    padding: 0.5em 1em
-    border-radius: 0.5em
+    span, .results>div, em
+        padding: 0.5em 1em
+        border-radius: 0.5em
 
-    &:hover
+    .results
+        flex-grow: 1
+
+
+.search-result-item
+
+    &:hover, &.highlighted
         cursor: pointer
         background-color: var(--dropdown-hover-background-color)
-        
-.search-mask
-    background-color: rgba(0, 0, 0, 0.5)
-    height: 20px
 
 .float-right
-    float: right
+    display: flex
+    justify-content: end
+
+    > *
+        margin: 0.5em
+
+.row
+    display: flex
+    justify-content: space-between
+    align-items: center
+
+.store-list-display
+    .store-name-display, label
+        margin-top: 2em
+        margin-bottom: 2em
+
+
+.store-name-display
+    border-radius: 0.5em
+
+    .name
+        padding: 0.5em 0.5em 0.5em 2.3em
+        border-radius: 0.5em
+        position: relative
+
+        .store-box
+            width: 2em
+            position: absolute
+            top: 0
+            bottom: 0
+            left: 0
+            border-radius: 0.5em 0 0 0.5em
+
+.store-list-hint
+    margin-right: 1em
+    display: flex
+
+    .store-name-display
+        font-size: 0.5em
+        margin: 0.5em
+
+.loading-spinner
+    font-size: 2em

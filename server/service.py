@@ -4,7 +4,7 @@ from typing import Dict, List
 from sqlalchemy.orm import contains_eager, Session
 
 import models
-from tool_kit.external import Database, Environment
+from tool_kit.external import DatabaseConnection
 import view_models
 
 
@@ -14,7 +14,7 @@ class Storage:
     @classmethod
     def _get_db_manager(cls):
         if cls._db_manager is None:
-            cls._db_manager = Database()
+            cls._db_manager = DatabaseConnection()
         return cls._db_manager
 
     @classmethod
@@ -30,18 +30,16 @@ class Storage:
     @classmethod
     def load_item_list(cls):
         with cls._get_db_manager().get_new_session() as session:
-            db_items = cls._build_item_query(session).all()
-
-            needed_items = (
-                session.query(models.ItemNeeded.item_id)
+            db_items = (
+                cls._build_item_query(session)
+                .join(models.ItemNeeded)
                 .filter(models.ItemNeeded.cleared_time.is_(None))
             ).all()
-            needed_item_ids = {needed_item.item_id for needed_item in needed_items}
 
         view_items = []
         for db_item in db_items:
             view_model = cls._build_item_view_model(db_item)
-            view_model.is_needed = view_model.id in needed_item_ids
+            view_model.is_needed = True
             view_items.append(view_model)
             
         return view_items
@@ -49,15 +47,8 @@ class Storage:
     @classmethod
     def load_locations(cls) -> List[str]:
         with cls._get_db_manager().get_new_session() as session:
-            locations = session.query(models.Location).order_by(models.Location.id).all()
-        return [
-            {
-                'id': location.id,
-                'name': location.name,
-                'color': location.color
-            }
-            for location in locations
-        ]
+            locations = session.query(models.Location).all()
+        return [cls._build_location_view_model(location) for location in locations]
 
     @classmethod
     def mark_item_needed(cls, item_id):
@@ -75,25 +66,36 @@ class Storage:
 
     @classmethod
     def upsert_item(cls, view_item: view_models.Item):
-        if not view_item.locations:
-            return False, 'need to have at least 1 location'
-
         with cls._get_db_manager().get_new_session() as session:
-            item = session.query(models.Item).get(view_item.id)
-            if item is None:
+            if view_item.id is None:
                 item = models.Item()
                 session.add(item)
                 session.add(models.ItemNeeded(item=item))
+            else:
+                item = session.query(models.Item).get(view_item.id)
 
-            item.name = view_item.text
+            item.name = view_item.name
 
-            item.location_refs = []
-            location_name_map = cls._build_locations_map(session=session)
-            for location_name in view_item.locations:
-                location_obj = location_name_map[location_name]
-                item.location_refs.append(models.ItemLocation(location=location_obj))
+            item.location_refs = [
+                models.ItemLocation(location_id=location_id)
+                for location_id in view_item.locations
+            ]
 
-        return True, None
+        return item.id
+    
+    @classmethod
+    def upsert_location(cls, view_location: view_models.Location):
+        with cls._get_db_manager().get_new_session() as session:
+            if view_location.id is None:
+                location = models.Location()
+                session.add(location)
+            else:
+                location = session.query(models.Location).get(view_location.id)
+
+            location.name = view_location.name
+            location.color = view_location.color
+
+        return location.id
 
     @classmethod
     def update_locations(cls, location_list: List[view_models.Location]):
@@ -105,6 +107,15 @@ class Storage:
                     session.delete(db_location)
                 else:
                     cls._update_location(db_location=db_location, client_location=updated_location)
+
+    @classmethod
+    def search_items(cls, search_text: str):
+        with cls._get_db_manager().get_new_session() as session:
+            item_list = cls._build_item_query(session).filter(
+                models.Item.name.ilike(f'%{search_text}%')
+            ).all()
+
+        return [cls._build_item_view_model(db_item) for db_item in item_list]
 
     @classmethod
     def _find_location(cls, location_list: List[view_models.Location], location_id):
@@ -128,8 +139,8 @@ class Storage:
     def _build_item_query(cls, session):
         return (
             session.query(models.Item)
-            .join(models.Item.location_refs)
-            .join(models.ItemLocation.location)
+            .outerjoin(models.Item.location_refs)
+            .outerjoin(models.ItemLocation.location)
             .options(
                 contains_eager(models.Item.location_refs, models.ItemLocation.location)
             )
@@ -137,10 +148,18 @@ class Storage:
 
     @classmethod
     def _build_item_view_model(cls, db_item: models.Item):
-        location_names = [location_ref.location.name for location_ref in db_item.location_refs]
         return view_models.Item(
             id=db_item.id,
-            text=db_item.name,
+            name=db_item.name,
             is_needed=False,
-            locations=location_names
+            locations=[location_ref.location_id for location_ref in db_item.location_refs]
         )
+    
+    @classmethod
+    def _build_location_view_model(cls, db_location: models.Location):
+        return view_models.Location(
+            id=db_location.id,
+            name=db_location.name,
+            color=db_location.color
+        )
+    

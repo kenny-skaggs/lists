@@ -5,6 +5,9 @@ const common = require('./webpack.common');
 
 module.exports = merge(common, {
     mode: 'development',
+    output: {
+        publicPath: '/'
+    },
     target: 'web',
     cache: {
         type: 'filesystem',
@@ -13,5 +16,8 @@ module.exports = merge(common, {
         new webpack.DefinePlugin({
             'process.env': JSON.stringify('development')
         })
-    ]
+    ],
+    devServer: {
+        historyApiFallback: true
+    }
 });

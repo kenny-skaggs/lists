@@ -1,14 +1,16 @@
+import time
 
 from dotenv import load_dotenv
 from flask import Flask
 from flask_socketio import emit, send, SocketIO
+
+load_dotenv()
 
 from service import Storage
 from tool_kit.external import Environment
 import view_models
 
 
-load_dotenv()
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
@@ -18,7 +20,9 @@ socket_io = SocketIO(app, cors_allowed_origins='*')
 
 @socket_io.on('load_item_list')
 def on_load_item_list():
-    return [item.to_dict() for item in Storage.load_items()]
+    serializer = view_models.ItemSerializer(many=True)
+    item_list = Storage.load_item_list()
+    return serializer.dump(item_list)
 
 
 @socket_io.on('load_item')
@@ -29,30 +33,25 @@ def on_load_item(item_id):
 
 @socket_io.on('load_locations')
 def on_load_locations():
-    return Storage.load_locations()
+    serializer = view_models.LocationSerializer(many=True)
+    location_list = Storage.load_locations()
+    return serializer.dump(location_list)
 
 
-@socket_io.on('save_locations')
-def on_save_locations(location_list_json):
-    location_list = [
-        view_models.Location(
-            id=location_json['id'],
-            name=location_json['name'],
-            color=location_json['color']
-        )
-        for location_json in location_list_json
-    ]
-    Storage.update_locations(location_list)
+@socket_io.on('upsert_location')
+def on_upsert_location(location_json):
+    serializer = view_models.LocationSerializer()
+    location = serializer.load(location_json)
+    location_id = Storage.upsert_location(location)
+    return location_id
 
 
 @socket_io.on('upsert_item')
 def on_upsert_item(item_json):
-    item = view_models.Item.from_dict(item_json)
-    success_bool, error_msg = Storage.upsert_item(item)
-    send({
-        'saved': success_bool,
-        'message': error_msg
-    })
+    serializer = view_models.ItemSerializer()
+    item = serializer.load(item_json)
+    item_id = Storage.upsert_item(item)
+    send(item_id)
 
 
 @socket_io.on('need_item')
@@ -65,6 +64,12 @@ def on_need_item(item_id):
 def on_dont_need_item(item_id):
     Storage.mark_item_not_needed(item_id=item_id)
     socket_io.emit('removeItem', item_id, include_self=False)
+
+@socket_io.on('search')
+def on_search(search_text):
+    results = Storage.search_items(search_text)
+    serializer = view_models.ItemSerializer(many=True)
+    return serializer.dump(results)
 
 
 if __name__ == '__main__':

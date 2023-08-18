@@ -8,9 +8,14 @@ const item_list = new ItemList();
 const search_bar = new SearchBar();
 
 
+const store_list_button = new store_list();
+
 export default {
     template: html`
-        <section>${store_list.template}</section>
+        <section class="row">
+            <span class='page-title'>Groceries</span>
+            ${store_list_button.render()}
+        </section>
         <section>${item_list.render}</section>
 
         <div class="search-spacer"> </div>

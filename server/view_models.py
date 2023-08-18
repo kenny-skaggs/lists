@@ -1,35 +1,41 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List
+
+from marshmallow import Schema, fields, post_load
 
 
 @dataclass
 class Item:
-    id: int
-    text: str
-    is_needed: bool
-    locations: List[str]
+    name: str
+    is_needed: bool = None
+    locations: List[str] = None
+    id: int = None
     notes: str = ''
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'text': self.text,
-            'isNeeded': self.is_needed,
-            'locations': self.locations
-        }
 
-    @classmethod
-    def from_dict(cls, item_dict):
-        return Item(
-            id=item_dict['id'],
-            text=item_dict['text'],
-            is_needed=item_dict['isNeeded'],
-            locations=item_dict['locations']
-        )
+class ItemSerializer(Schema):
+    id = fields.Int()
+    name = fields.Str()
+    is_needed = fields.Bool(data_key='isNeeded')
+    locations = fields.List(fields.Int())
+
+    @post_load
+    def make_item(self, data, **_):
+        return Item(**data)
 
 
 @dataclass
 class Location:
-    id: int
     name: str
     color: str
+    id: int = None
+
+
+class LocationSerializer(Schema):
+    id = fields.Int()
+    name = fields.Str()
+    color = fields.Str()
+
+    @post_load
+    def make_item(self, data, **_):
+        return Location(**data)

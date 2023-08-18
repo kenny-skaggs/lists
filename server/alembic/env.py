@@ -1,10 +1,11 @@
 from logging.config import fileConfig
 
 from dotenv import load_dotenv
+load_dotenv()
 
 from alembic import context
 
-from tool_kit.external import Database
+from tool_kit.external import DatabaseConnection
 from models import BaseModel
 
 # this is the Alembic Config object, which provides
@@ -39,7 +40,7 @@ def run_migrations_offline():
     script output.
 
     """
-    with Database().engine.connect() as connection:
+    with DatabaseConnection().engine.connect() as connection:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
@@ -58,7 +59,7 @@ def run_migrations_online():
     and associate a connection with the context.
 
     """
-    connectable = Database().engine
+    connectable = DatabaseConnection().engine
 
     with connectable.connect() as connection:
         context.configure(

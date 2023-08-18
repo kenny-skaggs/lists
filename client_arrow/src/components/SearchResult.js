@@ -1,5 +1,4 @@
 import { html } from "@arrow-js/core";
-import storeInstance from "../services/store";
 
 
 export default class {
@@ -8,12 +7,23 @@ export default class {
         this._clickCallback = clickCallback;
     }
     onClick = () => {
-        storeInstance.addToList(this.search_result);
-        this._clickCallback();
+        this._clickCallback(this.search_result.item);
+    }
+    getClassList = () => {
+        let classes = "search-result-item";
+        if (this.search_result.isHighlighted) {
+            classes += " highlighted";
+        }
+        return classes;
     }
     render = () => {
         return html`
-            <div class="search-result-item" @click="${this.onClick}">${this.search_result.name}</div>
+            <div
+                class="${() => this.getClassList()}"
+                @click="${this.onClick}"
+            >
+                ${this.search_result.item.name}
+            </div>
         `
     }
 }

@@ -8,21 +8,27 @@ import router from "../router";
 export default class {
     constructor (doneCallback) {
         this.data = reactive({
-            results: []
+            results: [],
+            isSearching: true
         });
         this._doneCallback = doneCallback;
     }
+    setIsSearching = (isSearching) => this.data.isSearching = isSearching;
     setResults = (results) => {
         this.data.results = results;
     }
-    onResultClicked = () => {
-        this._doneCallback();
+    onResultClicked = (clicked_result) => {
+        this._doneCallback(clicked_result);
     }
     onAddClicked = () => {
         router.navigate('/edit');
         this._doneCallback();
     }
     getResultsDisplay = () => {
+        if (this.data.isSearching) {
+            return html`<span aria-busy="true"></span>`
+        }
+
         if (this.data.results.length == 0) {
             return html`<em>Not Found</em>`
         } else {
@@ -33,8 +39,10 @@ export default class {
     }
     render = () => {
         return html`
-            ${new Button('Add New Item', 'secondary outline float-right', this.onAddClicked).template()}
-            ${() => this.getResultsDisplay()}
+            <div class='results'>
+                ${() => this.getResultsDisplay()} 
+            </div>
+            ${new Button('Add New Item', 'secondary outline add-new', this.onAddClicked).template()}
         `;
     }
 }
